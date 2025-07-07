@@ -209,9 +209,17 @@ module decoder(input  logic [1:0] Op,
   always_comb
   	case(Op)
   	                        // Data processing immediate
-  	  2'b00: if (Funct[5])  controls = 10'b0000101001; 
+  	  2'b00: if (Funct[5])  
+            //se 'cmd' for CMP, ele não atualiza registros
+            if (Funct[4:1] === 4'b1010) controls = 10'b0000100001; 
+            //caso contrário, ele permanece igual
+            else controls = 10'b0000101001;
   	                        // Data processing register
-  	         else           controls = 10'b0000001001; 
+            else 
+            // se 'cmd' for CMP, ele não atualiza registros
+            if (Funct[4:1] === 4'b1010) controls = 10'b0000100001;
+            //caso contrário, ele permanece igual 
+  	        else           controls = 10'b0000001001; 
   	                        // LDR
   	  2'b01: if (Funct[0])  controls = 10'b0001111000; 
   	                        // STR
