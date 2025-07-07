@@ -156,18 +156,18 @@ module arm(input  logic        clk, reset,
 
   logic [3:0] ALUFlags;
   logic       RegWrite, 
-              ALUSrc, MemtoReg, PCSrc, MOVFlag;
+              ALUSrc, MemtoReg, PCSrc, MOVFlag, BLFlag;
   logic [1:0] RegSrc, ImmSrc;
   logic [2:0] ALUControl;
 
   controller c(clk, reset, Instr[31:12], ALUFlags, 
                RegSrc, RegWrite, ImmSrc, 
                ALUSrc, ALUControl,
-               MemWrite, MemtoReg, PCSrc, MOVFlag);
+               MemWrite, MemtoReg, PCSrc, MOVFlag, BLFlag);
   datapath dp(clk, reset, 
               RegSrc, RegWrite, ImmSrc,
               ALUSrc, ALUControl,
-              MemtoReg, PCSrc, MOVFlag,
+              MemtoReg, PCSrc, MOVFlag, BLFlag,
               ALUFlags, PC, Instr,
               ALUResult, WriteData, ReadData);
 endmodule
@@ -182,14 +182,14 @@ module controller(input  logic         clk, reset,
                   output logic [2:0]   ALUControl,
                   output logic         MemWrite, MemtoReg,
                   output logic         PCSrc,
-                  output logic         MOVFlag);
+                  output logic         MOVFlag, BLFlag);
 
   logic [1:0] FlagW;
   logic       PCS, RegW, MemW;
   
   decoder dec(Instr[27:26], Instr[25:20], Instr[15:12],
               FlagW, PCS, RegW, MemW,
-              MemtoReg, ALUSrc, MOVFlag, ImmSrc, RegSrc, ALUControl);
+              MemtoReg, ALUSrc, MOVFlag, BLFlag, ImmSrc, RegSrc, ALUControl);
   condlogic cl(clk, reset, Instr[31:28], ALUFlags,
                FlagW, PCS, RegW, MemW,
                PCSrc, RegWrite, MemWrite);
@@ -200,7 +200,7 @@ module decoder(input  logic [1:0] Op,
                input  logic [3:0] Rd,
                output logic [1:0] FlagW,
                output logic       PCS, RegW, MemW,
-               output logic       MemtoReg, ALUSrc, MOVFlag,
+               output logic       MemtoReg, ALUSrc, MOVFlag, BLFlag,
                output logic [1:0] ImmSrc, RegSrc, 
                output logic [2:0] ALUControl);
 
@@ -214,23 +214,53 @@ module decoder(input  logic [1:0] Op,
   	                        // Data processing immediate
   	  2'b00: if (Funct[5])  
             //se 'cmd' for CMP ou TST, ele não atualiza registros
-            if (Funct[4:1] === 4'b1010 | Funct[4:1] === 4'b1000) controls = 10'b0000100001; 
+            if (Funct[4:1] === 4'b1010 | Funct[4:1] === 4'b1000) begin
+                                          controls = 10'b0000100001;
+                                          BLFlag = 1'b0;
+                end
             //caso contrário, ele permanece igual
-            else controls = 10'b0000101001;
+            else begin
+                    controls = 10'b0000101001;
+                    BLFlag = 1'b0;
+                end
+
   	                        // Data processing register
             else 
             // se 'cmd' for CMP ou TST, ele não atualiza registros
-            if (Funct[4:1] === 4'b1010 | Funct[4:1] === 4'b1000) controls = 10'b0000000001;
+            if (Funct[4:1] === 4'b1010 | Funct[4:1] === 4'b1000) begin
+                                          controls = 10'b0000000001;
+                                          BLFlag = 1'b0;
+                end
             //caso contrário, ele permanece igual 
-  	        else           controls = 10'b0000001001; 
+  	        else begin
+                                          controls = 10'b0000001001;
+                                          BLFlag = 1'b0;
+                end
   	                        // LDR
-  	  2'b01: if (Funct[0])  controls = 10'b0001111000; 
+  	  2'b01: if (Funct[0]) begin
+                    controls = 10'b0001111000;
+                    BLFlag = 1'b0;
+             end
   	                        // STR
-  	         else           controls = 10'b1001110100; 
-  	                        // B
-  	  2'b10:                controls = 10'b0110100010; 
+  	         else begin
+                    controls = 10'b1001110100;
+                    BLFlag = 1'b0;
+             end 
+  	                        // B e BL
+  	  2'b10:  if (Funct[5:4] === 2'b00) begin
+                            controls = 10'b0110100010; 
+                            BranchLFlag = 1'b0;
+              end
+
+              else begin
+                            BLFlag = 1'b1;
+                            controls = 10'b0110101010;
+              end 
   	                        // Unimplemented
-  	  default:              controls = 10'bx;          
+  	  default: begin
+                            controls = 10'bx;
+                            BLFlag = 1'b0;
+      end          
   	endcase
 
   assign {RegSrc, ImmSrc, ALUSrc, MemtoReg, 
@@ -355,7 +385,7 @@ module datapath(input  logic        clk, reset,
                 input  logic [2:0]  ALUControl,
                 input  logic        MemtoReg,
                 input  logic        PCSrc,
-                input  logic        MOVFlag,
+                input  logic        MOVFlag, BLFlag
                 output logic [3:0]  ALUFlags,
                 output logic [31:0] PC,
                 input  logic [31:0] Instr,
@@ -365,6 +395,8 @@ module datapath(input  logic        clk, reset,
   logic [31:0] PCNext, PCPlus4, PCPlus8;
   logic [31:0] ExtImm, SrcA, SrcB, Result, movSrcAresult;
   logic [3:0]  RA1, RA2;
+  logic [3:0] a3result;
+  logic [31:0] wd3result;
 
   // next PC logic
   mux2 #(32)  pcmux(PCPlus4, Result, PCSrc, PCNext);
@@ -375,8 +407,12 @@ module datapath(input  logic        clk, reset,
   // register file logic
   mux2 #(4)   ra1mux(Instr[19:16], 4'b1111, RegSrc[0], RA1);
   mux2 #(4)   ra2mux(Instr[3:0], Instr[15:12], RegSrc[1], RA2);
+
+  mux2 #(4)   a3mux(Instr[15:12], 4'b1110, BLFlag, a3result); // se a instrução for BL, ela envia '14 (LR)' para A3
+  mux2 #(32)  wd3mux(Result, PCPlus4, BLFlag, wd3result);  // se a instrução for BL, ela envia 'PC + 4' para WD3
+
   regfile     rf(clk, RegWrite, RA1, RA2,
-                 Instr[15:12], Result, PCPlus8, 
+                 a3result, wd3result, PCPlus8, 
                  SrcA, WriteData); 
   mux2 #(32)  resmux(ALUResult, ReadData, MemtoReg, Result);
   mux2 #(32) movSrcAmux(SrcA, 32'b0, MOVFlag, movSrcAresult); // Escolha Src ou 0 dependendo do MOVFlag
