@@ -185,13 +185,13 @@ module controller(input  logic         clk, reset,
                   output logic         MOVFlag, BLFlag);
 
   logic [1:0] FlagW;
-  logic       PCS, RegW, MemW;
+  logic       PCS, RegW, MemW, NoWrite;
   
   decoder dec(Instr[27:26], Instr[25:20], Instr[15:12],
               FlagW, PCS, RegW, MemW,
-              MemtoReg, ALUSrc, MOVFlag, BLFlag, ImmSrc, RegSrc, ALUControl);
+              MemtoReg, ALUSrc, NoWrite, MOVFlag, BLFlag, ImmSrc, RegSrc, ALUControl);
   condlogic cl(clk, reset, Instr[31:28], ALUFlags,
-               FlagW, PCS, RegW, MemW,
+               FlagW, PCS, RegW, MemW, NoWrite,
                PCSrc, RegWrite, MemWrite);
 endmodule
 
@@ -200,7 +200,7 @@ module decoder(input  logic [1:0] Op,
                input  logic [3:0] Rd,
                output logic [1:0] FlagW,
                output logic       PCS, RegW, MemW,
-               output logic       MemtoReg, ALUSrc, MOVFlag, BLFlag,
+               output logic       MemtoReg, ALUSrc, NoWrite, MOVFlag, BLFlag,
                output logic [1:0] ImmSrc, RegSrc, 
                output logic [2:0] ALUControl);
 
@@ -212,27 +212,12 @@ module decoder(input  logic [1:0] Op,
   always_comb
   	case(Op)
   	                        // Data processing immediate
-  	  2'b00: if (Funct[5])  
-            //se 'cmd' for CMP ou TST, ele não atualiza registros
-            if (Funct[4:1] === 4'b1010 | Funct[4:1] === 4'b1000) begin
-                                          controls = 10'b0000100001;
+  	  2'b00:  if (Funct[5]) begin  
+                                          controls = 10'b0000101001;
                                           BLFlag = 1'b0;
-                end
-            //caso contrário, ele permanece igual
-            else begin
-                    controls = 10'b0000101001;
-                    BLFlag = 1'b0;
-                end
-
+            end
   	                        // Data processing register
-            else 
-            // se 'cmd' for CMP ou TST, ele não atualiza registros
-            if (Funct[4:1] === 4'b1010 | Funct[4:1] === 4'b1000) begin
-                                          controls = 10'b0000000001;
-                                          BLFlag = 1'b0;
-                end
-            //caso contrário, ele permanece igual 
-  	        else begin
+  	          else begin
                                           controls = 10'b0000001001;
                                           BLFlag = 1'b0;
                 end
@@ -273,39 +258,48 @@ module decoder(input  logic [1:0] Op,
   	    4'b0100: begin
             ALUControl = 3'b000; // ADD
             MOVFlag = 1'b0;
+            NoWrite = 1'b1;
         end
   	    4'b0010: begin
             ALUControl = 3'b001; // SUB
             MOVFlag = 1'b0;
+            NoWrite = 1'b1;
         end
         4'b0000: begin
             ALUControl = 3'b010; // AND
             MOVFlag = 1'b0;
+            NoWrite = 1'b1;
         end
   	    4'b1100: begin
             ALUControl = 3'b011; // ORR
             MOVFlag = 1'b0;
+            NoWrite = 1'b1;
         end
         4'b1010: begin
             ALUControl = 3'b001; //CMP (com base em SUB)
             MOVFlag = 1'b0;
+            NoWrite = 1'b0; //não escreve se é CMP
         end
         4'b1000: begin
             ALUControl = 3'b010; //TST (com base em AND)
             MOVFlag = 1'b0;
+            NoWrite = 1'b0; //não escreve se é TST
         end
         4'b0001: begin
             ALUControl = 3'b100; //EOR (XOR)
             MOVFlag = 1'b0;
+            NoWrite = 1'b1;
         end
         // MOV
         4'b1101: begin
             ALUControl = 3'b000; //ADD
             MOVFlag = 1'b1;
+            NoWrite = 1'b1;
         end
   	    default: begin
             ALUControl = 3'bx;  // unimplemented
             MOVFlag = 1'b0;
+            NoWrite = 1'b1;
         end
       endcase
       // update flags if S bit is set 
@@ -327,7 +321,7 @@ module condlogic(input  logic       clk, reset,
                  input  logic [3:0] Cond,
                  input  logic [3:0] ALUFlags,
                  input  logic [1:0] FlagW,
-                 input  logic       PCS, RegW, MemW,
+                 input  logic       PCS, RegW, MemW, NoWrite,
                  output logic       PCSrc, RegWrite, MemWrite);
                  
   logic [1:0] FlagWrite;
@@ -342,7 +336,7 @@ module condlogic(input  logic       clk, reset,
   // write controls are conditional
   condcheck cc(Cond, Flags, CondEx);
   assign FlagWrite = FlagW & {2{CondEx}};
-  assign RegWrite  = RegW  & CondEx;
+  assign RegWrite  = NoWrite & RegW  & CondEx;
   assign MemWrite  = MemW  & CondEx;
   assign PCSrc     = PCS   & CondEx;
 endmodule    
@@ -397,6 +391,7 @@ module datapath(input  logic        clk, reset,
   logic [3:0]  RA1, RA2;
   logic [3:0] a3result;
   logic [31:0] wd3result;
+  logic [31:0] ShiftResult;
 
   // next PC logic
   mux2 #(32)  pcmux(PCPlus4, Result, PCSrc, PCNext);
@@ -418,8 +413,14 @@ module datapath(input  logic        clk, reset,
   mux2 #(32) movSrcAmux(SrcA, 32'b0, MOVFlag, movSrcAresult); // Escolha Src ou 0 dependendo do MOVFlag
   extend      ext(Instr[23:0], ImmSrc, ExtImm);
 
+
+
+
+//calcular turno
+shifter shift(Instr[11:7], Instr[6:5], WriteData, ShiftResult);
+
   // ALU logic
-  mux2 #(32)  srcbmux(WriteData, ExtImm, ALUSrc, SrcB);
+  mux2 #(32)  srcbmux(ShiftResult, ExtImm, ALUSrc, SrcB);
   alu         alu(movSrcAresult, SrcB, ALUControl, 
                   ALUResult, ALUFlags);
 endmodule
@@ -525,4 +526,23 @@ module alu(input  logic [31:0] a, b,
   assign ALUFlags    = {neg, zero, carry, overflow};
 endmodule
 
+//modulo shift implementado para instruções de turno
+module shifter(input logic [4:0] shamt5,
+               input logic [1:0] sh,
+               input logic [31:0] Rm,
+               output logic [31:0] Rmshifted);
+
+  logic [31:0] shamt32;
+  
+  assign shamt32 = {27'b0, shamt5};
+
+  always_comb
+    casex (sh[1:0]) //analyse the type of shift
+      2'b00: Rmshifted = Rm << shamt32;
+      2'b01: Rmshifted = Rmshifted;
+      2'b10: Rmshifted = Rmshifted;
+      2'b11: Rmshifted = Rmshifted;
+    endcase
+
+endmodule
 
