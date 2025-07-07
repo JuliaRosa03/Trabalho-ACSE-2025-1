@@ -443,17 +443,17 @@ module datapath(input  logic        clk, reset,
   mux2 #(4)   ra1mux(Instr[19:16], 4'b1111, RegSrc[0], RA1);
   mux2 #(4)   ra2mux(Instr[3:0], Instr[15:12], RegSrc[1], RA2);
   
-  mux2 #(4)   a3mux(Instr[15:12], 4'b1110, BLFlag, a3result); // if instruction is BL, it sends '14 (LR)' to A3
-  mux2 #(32)  wd3mux(ResultData, PCPlus4, BLFlag, wd3result);  // if instruction is BL, it sends 'PC + 4' to WD3
+  mux2 #(4)   a3mux(Instr[15:12], 4'b1110, BLFlag, a3result); // se for BL, envia 14 (LR) para A3
+  mux2 #(32)  wd3mux(ResultData, PCPlus4, BLFlag, wd3result);  // se for BL, envia 'PC + 4' para WD3
   regfile     rf(clk, RegWrite, RA1, RA2,
                  a3result, wd3result, PCPlus8,
                  SrcA, WdPartial);
   mux2 #(32)  resmux(ALUResult, ReadData, MemtoReg, Result);
 
-  //check if LDRB is called
+  //verifica se LDRB foi chamado
   always_comb
     if (LDRBFlag)
-      assign ResultData = {24'bx,Result[7:0]}; //ResultData goes to wd3mux
+      assign ResultData = {24'bx,Result[7:0]}; //ResultData vai para wd3mux
     else
       assign ResultData = Result;
   
