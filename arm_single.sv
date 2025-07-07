@@ -210,14 +210,14 @@ module decoder(input  logic [1:0] Op,
   	case(Op)
   	                        // Data processing immediate
   	  2'b00: if (Funct[5])  
-            //se 'cmd' for CMP, ele não atualiza registros
-            if (Funct[4:1] === 4'b1010) controls = 10'b0000100001; 
+            //se 'cmd' for CMP ou TST, ele não atualiza registros
+            if (Funct[4:1] === 4'b1010 | Funct[4:1] === 4'b1000) controls = 10'b0000100001; 
             //caso contrário, ele permanece igual
             else controls = 10'b0000101001;
   	                        // Data processing register
             else 
-            // se 'cmd' for CMP, ele não atualiza registros
-            if (Funct[4:1] === 4'b1010) controls = 10'b0000100001;
+            // se 'cmd' for CMP ou TST, ele não atualiza registros
+            if (Funct[4:1] === 4'b1010 | Funct[4:1] === 4'b1000) controls = 10'b0000100001;
             //caso contrário, ele permanece igual 
   	        else           controls = 10'b0000001001; 
   	                        // LDR
@@ -241,6 +241,8 @@ module decoder(input  logic [1:0] Op,
   	    4'b0010: ALUControl = 2'b01; // SUB
           4'b0000: ALUControl = 2'b10; // AND
   	    4'b1100: ALUControl = 2'b11; // ORR
+        4'b1010: ALUControl = 2'b01; //CMP (com base em SUB)
+        4'b1000: ALUControl = 2'b10; //TST (com base em AND)
   	    default: ALUControl = 2'bx;  // unimplemented
       endcase
       // update flags if S bit is set 
