@@ -22,7 +22,6 @@ AROUND
 	ADD R2, R0, #13   	; shouldn't happen				
   	ADD R2, R0, #10		; shouldn't happen			  
 END	STR R2, [R0, #100] 	; mem[100] = 7
-    
     MOV R1, #10  ; R1 = 10
 	MOV R2, R3  ; R2 = 12
 	CMP R1,R2  ; R1-R2 & set Flags
