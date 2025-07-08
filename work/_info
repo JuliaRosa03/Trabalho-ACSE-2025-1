@@ -8,18 +8,18 @@ z2
 !i10e 25
 !i10f 100
 cModel Technology
-dC:/Users/julia/Downloads
+Z0 dC:/Users/julia/OneDrive/Documentos/IFES/TRABALHO_ACSE_2025_1/Trabalho_ACSE_2025_1
 vadder
-Z0 DXx6 sv_std 3 std 0 22 VYECXdT12H8WgbUP_5Y6:3
-Z1 !s110 1751920475
+Z1 DXx6 sv_std 3 std 0 22 VYECXdT12H8WgbUP_5Y6:3
+Z2 !s110 1752007378
 !i10b 1
 !s100 EL=H>Ui[SPPHTLin;ehVS0
 !s11b <C_L1[Io^:I3S6?W@lDgU3
 I7h8cb0@[DJ8C]9SXc<CkL3
-Z2 VDg1SIo80bB@j0V0VzS_@n1
+Z3 VDg1SIo80bB@j0V0VzS_@n1
 S1
-Z3 dC:/Users/julia/OneDrive/Documentos/IFES/TRABALHO_ACSE_2025_1/Trabalho_ACSE_2025_1
-Z4 w1751920275
+R0
+Z4 w1752007276
 Z5 8C:/Users/julia/OneDrive/Documentos/IFES/TRABALHO_ACSE_2025_1/Trabalho_ACSE_2025_1/arm_single.sv
 Z6 FC:/Users/julia/OneDrive/Documentos/IFES/TRABALHO_ACSE_2025_1/Trabalho_ACSE_2025_1/arm_single.sv
 L0 515
@@ -27,22 +27,22 @@ Z7 OV;L;2019.2;69
 r1
 !s85 0
 31
-Z8 !s108 1751920475.000000
+Z8 !s108 1752007378.000000
 !s107 C:/Users/julia/OneDrive/Documentos/IFES/TRABALHO_ACSE_2025_1/Trabalho_ACSE_2025_1/arm_single.sv|
 Z9 !s90 -reportprogress|300|-work|work|-sv|-stats=none|C:/Users/julia/OneDrive/Documentos/IFES/TRABALHO_ACSE_2025_1/Trabalho_ACSE_2025_1/arm_single.sv|
 !i113 1
 Z10 o-work work -sv
 Z11 tCvgOpt 0
 valu
-R0
 R1
+R2
 !i10b 1
 !s100 f1O]VL8A46>W1[2GIf3>43
 !s11b WMcDzeBPegCcLJ1[0Y5of1
 I4oRNoHQbPK7M0TS@8<XQL3
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -58,15 +58,15 @@ R9
 R10
 R11
 varm
-R0
 R1
+R2
 !i10b 1
 !s100 H:G:0[LBi`FgFS`McEO6S0
 !s11b _<]4:H0HcVWPXiW_LGf:o0
 Ib7^?b7ePa`JACBaAzgj;63
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -82,15 +82,15 @@ R9
 R10
 R11
 vcondcheck
-R0
 R1
+R2
 !i10b 1
 !s100 Th<]Q>gcOLYdYAB2Lof9;2
 !s11b Y6_SDG9hKM7CG_8zU@32o1
 IhZbC9^ZFg]NjaHAcSZjLR2
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -106,15 +106,15 @@ R9
 R10
 R11
 vcondlogic
-R0
 R1
+R2
 !i10b 1
 !s100 Jdg:3dB>bV?1_P7lj_24_2
 !s11b zX]3^J40eE2R7zaJ8_Ya<0
 IGgVRlG0_nXoPTbTQQfS6G0
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -130,15 +130,15 @@ R9
 R10
 R11
 vcontroller
-R0
 R1
+R2
 !i10b 1
 !s100 OP7a:6IoY1UHej9jDXEz=0
 !s11b PU0Y5;?91Fd65[PT:V9^U2
 IADIlLE^BU@VIfJRYnjG840
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -154,15 +154,15 @@ R9
 R10
 R11
 vdatapath
-R0
 R1
+R2
 !i10b 1
 !s100 9[7P8?A@J>HAbQ4KGoUiV2
 !s11b ]5560WPog4LeF66aP@MY72
 ITPdOk?4i1S0:IQ9JoS7Jb3
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -178,15 +178,15 @@ R9
 R10
 R11
 vdecoder
-R0
 R1
+R2
 !i10b 1
 !s100 99@j6X7idYmV[6LY`hd1]3
 !s11b eRdCYIzaI]YZRF2^:1HHD1
 INY7M85JJ:SlSWffm^KZQE1
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -202,15 +202,15 @@ R9
 R10
 R11
 vdmem
-R0
 R1
+R2
 !i10b 1
 !s100 c2THf<KIRnR0fWW1z^FhD0
 !s11b kDNl4mPeXVb_c534OBSVE0
 IkU=S<Pc9N>gA<BoTGOHYf0
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -226,15 +226,15 @@ R9
 R10
 R11
 vextend
-R0
 R1
+R2
 !i10b 1
 !s100 0Zj>g5iNQSB8jWEfnR82d1
 !s11b ^9gSIg^JWGhTbF^E3R8:l0
 Id6:<dS630WQOdP2[O]WUF1
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -250,15 +250,15 @@ R9
 R10
 R11
 vflopenr
-R0
 R1
+R2
 !i10b 1
 !s100 Kgzn=Yf9=YS:joDFn;]n=2
 !s11b F1IzmbizX78JloX:j;Hj53
 IT20EVJWn4Kb?84ch5P9G`2
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -274,15 +274,15 @@ R9
 R10
 R11
 vflopr
-R0
 R1
+R2
 !i10b 1
 !s100 ?f5P3K];6>C9o04[;@5JZ2
 !s11b 8B49h]9L2InXag=il070E0
 IfRC2N@E8[97Uf>89Xn`3D2
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -298,15 +298,15 @@ R9
 R10
 R11
 vimem
-R0
 R1
+R2
 !i10b 1
 !s100 G=458DW60Nm5<@XEENSoa1
 !s11b YXfb?WbE5i`IimlJOmb1V0
 I;ncSP:IeMNZh>7gJ5fh4R0
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -322,15 +322,15 @@ R9
 R10
 R11
 vmux2
-R0
 R1
+R2
 !i10b 1
 !s100 UZ56M;5<4[S9BSR_X<BW40
 !s11b R@bfm9>GJH8n3[nPYL0nn3
 Io[;fb:f9dI]djdaICIa?F0
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -346,15 +346,15 @@ R9
 R10
 R11
 vregfile
-R0
 R1
+R2
 !i10b 1
 !s100 4AJhMzG<PFFJ2zkiXU:z>0
 !s11b Oc;L`XmFbCkFA^kKDiJQn1
 I_i0A9ZekDiZk??J`nk6mP2
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -370,15 +370,15 @@ R9
 R10
 R11
 vshifter
-R0
 R1
+R2
 !i10b 1
 !s100 Ec]H<=P90o]Y5zX@`W;:E0
 !s11b [YQciWV2K8Y`FD3V<z`4L3
 Ic:3IFEXUe0Q=UQXF[LnFf0
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -394,15 +394,15 @@ R9
 R10
 R11
 vtestbench
-R0
 R1
+R2
 !i10b 1
 !s100 :^8SPL7cf<:AOeO1:K78_1
 !s11b c0^zV>V3Wo39JIA0<D1HO3
 IDV6UcB>20nIhD]<TKZU>@0
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
@@ -418,15 +418,15 @@ R9
 R10
 R11
 vtop
-R0
 R1
+R2
 !i10b 1
 !s100 KRhYjd:7dJbP[<Y61`H;=1
 !s11b WOCoC7ieLVb3>;I49NWXL0
 IYQeYEbhjN?^BABH[_TdeB1
-R2
-S1
 R3
+S1
+R0
 R4
 R5
 R6
