@@ -75,14 +75,14 @@
 
 module testbench();
 
-  logic        clk;
+  logic        clk, clkTimer;
   logic        reset;
 
   logic [31:0] WriteData, DataAdr;
   logic        MemWrite;
 
   // instantiate device to be tested
-  top dut(clk, reset, WriteData, DataAdr, MemWrite);
+  top dut(clk, reset, WriteData, DataAdr, MemWrite, clkTimer);
   
   // initialize test
   initial
@@ -96,8 +96,19 @@ module testbench();
       clk <= 1; # 5; clk <= 0; # 5;
     end
 
+always
+    begin
+      clkTimer <= 1; # 500000; clkTimer <= 0; # 500000;
+    end
+
   // check results
-  // always @(negedge clk)
+  always @(negedge clk)
+   begin
+     if(MemWrite) begin
+       $display("Wrote %d to address %d", WriteData, DataAdr);
+     end
+   end
+  //always @(negedge clk)
   //   begin
   //     if(MemWrite) begin
   //       if(DataAdr === 100 & WriteData === 7) begin
@@ -114,27 +125,62 @@ endmodule
 
 module top(input  logic        clk, reset, 
            output logic [31:0] WriteData, DataAdr, 
-           output logic        MemWrite);
+           output logic        MemWrite,
+           input logic         clkTimer);
 
   logic [31:0] PC, Instr, ReadData;
-  
+  logic [31:0] timestamp, CountTrigger, CountCheck;
+
   // instantiate processor and memories
   arm arm(clk, reset, PC, Instr, MemWrite, DataAdr, 
           WriteData, ReadData);
   imem imem(PC, Instr);
-  dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData);
+  dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData, CountCheck, timestamp, CountTrigger);
+
+  timer timer(clkTimer, timestamp, CountTrigger, CountCheck);
+endmodule
+
+module timer(input logic clkTimer,
+             input logic [31:0] timestamp,
+             input logic [31:0] CountTrigger,
+             output logic [31:0] CountCheck);
+
+  logic [31:0] count = 32'b0;
+
+  always_ff @(posedge clkTimer) begin
+    if (CountTrigger[1] & count < timestamp)
+      count++;
+        
+    else if (CountTrigger[1] === 1'b0 || count === timestamp) begin
+      count <= 32'b0;
+      CountCheck = 32'd9;
+      end
+  end
+
 endmodule
 
 module dmem(input  logic        clk, we,
             input  logic [31:0] a, wd,
-            output logic [31:0] rd);
+            output logic [31:0] rd,
+            input logic [31:0] outTimer,
+            output logic [31:0] Timestamp,
+            output logic [31:0] TimeTrigger);
 
   logic [31:0] RAM[63:0];
 
   assign rd = RAM[a[31:2]]; // word aligned
+  assign Timestamp = RAM[40]; //time-stamp para o timer
+  assign TimeTrigger = RAM[41]; //flag que diz ao timer para comecar a contagem
 
-  always_ff @(posedge clk)
-    if (we) RAM[a[31:2]] <= wd;
+  always_ff @(posedge clk) begin
+    if (we)
+      RAM[a[31:2]] <= wd;
+    
+    if (outTimer[0] === 1'b1)
+      RAM[41] <= outTimer; //flag do timer que diz que contagem foi completada
+   end
+
+
 endmodule
 
 module imem(input  logic [31:0] a,
@@ -154,21 +200,20 @@ module arm(input  logic        clk, reset,
            output logic        MemWrite,
            output logic [31:0] ALUResult, WriteData,
            input  logic [31:0] ReadData);
-
   logic [3:0] ALUFlags;
   logic       RegWrite, 
-              ALUSrc, MemtoReg, PCSrc, MOVFlag, BLFlag, STRBFlag, LDRBFlag;
+              ALUSrc, MemtoReg, PCSrc, MOVFlag, BLFlag;
   logic [1:0] RegSrc, ImmSrc;
   logic [2:0] ALUControl;
 
   controller c(clk, reset, Instr[31:12], ALUFlags, 
                RegSrc, RegWrite, ImmSrc, 
                ALUSrc, ALUControl,
-               MemWrite, MemtoReg, PCSrc, MOVFlag, BLFlag, STRBFlag, LDRBFlag);
+               MemWrite, MemtoReg, PCSrc, MOVFlag, BLFlag);
   datapath dp(clk, reset, 
               RegSrc, RegWrite, ImmSrc,
               ALUSrc, ALUControl,
-              MemtoReg, PCSrc, MOVFlag, BLFlag, STRBFlag, LDRBFlag,
+              MemtoReg, PCSrc, MOVFlag, BLFlag,
               ALUFlags, PC, Instr,
               ALUResult, WriteData, ReadData);
 endmodule
@@ -183,14 +228,14 @@ module controller(input  logic         clk, reset,
                   output logic [2:0]   ALUControl,
                   output logic         MemWrite, MemtoReg,
                   output logic         PCSrc,
-                  output logic         MOVFlag, BLFlag, STRBFlag, LDRBFlag);
+                  output logic         MOVFlag, BLFlag);
 
   logic [1:0] FlagW;
   logic       PCS, RegW, MemW, NoWrite;
   
   decoder dec(Instr[27:26], Instr[25:20], Instr[15:12],
               FlagW, PCS, RegW, MemW,
-              MemtoReg, ALUSrc, NoWrite, MOVFlag, BLFlag, STRBFlag, LDRBFlag, ImmSrc, RegSrc, ALUControl);
+              MemtoReg, ALUSrc, NoWrite, MOVFlag, BLFlag, ImmSrc, RegSrc, ALUControl);
   condlogic cl(clk, reset, Instr[31:28], ALUFlags,
                FlagW, PCS, RegW, MemW, NoWrite,
                PCSrc, RegWrite, MemWrite);
@@ -201,7 +246,7 @@ module decoder(input  logic [1:0] Op,
                input  logic [3:0] Rd,
                output logic [1:0] FlagW,
                output logic       PCS, RegW, MemW,
-               output logic       MemtoReg, ALUSrc, NoWrite, MOVFlag, BLFlag, STRBFlag, LDRBFlag,
+               output logic       MemtoReg, ALUSrc, NoWrite, MOVFlag, BLFlag,
                output logic [1:0] ImmSrc, RegSrc,
                output logic [2:0] ALUControl);
 
@@ -216,73 +261,39 @@ module decoder(input  logic [1:0] Op,
   	  2'b00:  if (Funct[5]) begin
                                           controls = 10'b0000101001;
                                           BLFlag = 1'b0;
-                                          STRBFlag = 1'b0;
-                                          LDRBFlag = 1'b0;
               end
                 
   	                        // Data processing register
   	          else begin
                                           controls = 10'b0000001001;
                                           BLFlag = 1'b0;
-                                          STRBFlag = 1'b0;
-                                          LDRBFlag = 1'b0;
               end
       
   	                        // LDR
   	  2'b01: if (Funct[0]) begin
-                    //LDRB
-                    if (Funct[2]) begin
-                        controls = 10'b0001111000;
-                        BLFlag = 1'b0;
-                        STRBFlag = 1'b0;
-                        LDRBFlag = 1'b1;
-                    end
-                    //LDR Padrao
-                    else begin
-                        controls = 10'b0001111000;
-                        BLFlag = 1'b0;
-                        STRBFlag = 1'b0;
-                        LDRBFlag = 1'b0;
-                    end
+                  controls = 10'b0001111000;
+                  BLFlag = 1'b0;
              end
   	                        // STR
   	         else begin
-                    //STRB
-                    if (Funct[2]) begin
-                        controls = 10'b1001110100;
-                        BLFlag = 1'b0;
-                        STRBFlag = 1'b1;
-                        LDRBFlag = 1'b0;
-                    end
-                    //STR Padrao
-                    else begin
-                        controls = 10'b1001110100;
-                        BLFlag = 1'b0;
-                        STRBFlag = 1'b0;
-                        LDRBFlag = 1'b0;
-                    end
+                  controls = 10'b1001110100;
+                  BLFlag = 1'b0;                    
              end
 
   	                        // B
   	  2'b10:  if (Funct[5:4] === 2'b00) begin
                             controls = 10'b0110100010; 
                             BLFlag = 1'b0;
-                            STRBFlag = 1'b0;
-                            LDRBFlag = 1'b0;
               end
                             //BL
               else begin
                             controls = 10'b0110101010; 
                             BLFlag = 1'b1;
-                            STRBFlag = 1'b0;
-                            LDRBFlag = 1'b0;
               end
   	                        // Unimplemented
   	  default: begin
                             controls = 10'bx;
                             BLFlag = 1'b0;
-                            STRBFlag = 1'b0;
-                            LDRBFlag = 1'b0;
       end
   	endcase
 
@@ -417,7 +428,7 @@ module datapath(input  logic        clk, reset,
                 input  logic [2:0]  ALUControl,
                 input  logic        MemtoReg,
                 input  logic        PCSrc,
-                input  logic        MOVFlag, BLFlag, STRBFlag, LDRBFlag,
+                input  logic        MOVFlag, BLFlag,
                 output logic [3:0]  ALUFlags,
                 output logic [31:0] PC,
                 input  logic [31:0] Instr,
@@ -430,8 +441,6 @@ module datapath(input  logic        clk, reset,
   logic [3:0] a3result;
   logic [31:0] wd3result;
   logic [31:0] ShiftResult;
-  logic [31:0] WdPartial;
-  logic [31:0] ResultData;
 
   // next PC logic
   mux2 #(32)  pcmux(PCPlus4, Result, PCSrc, PCNext);
@@ -444,31 +453,17 @@ module datapath(input  logic        clk, reset,
   mux2 #(4)   ra2mux(Instr[3:0], Instr[15:12], RegSrc[1], RA2);
   
   mux2 #(4)   a3mux(Instr[15:12], 4'b1110, BLFlag, a3result); // se for BL, envia 14 (LR) para A3
-  mux2 #(32)  wd3mux(ResultData, PCPlus4, BLFlag, wd3result);  // se for BL, envia 'PC + 4' para WD3
+  mux2 #(32)  wd3mux(Result, PCPlus4, BLFlag, wd3result);   // se for BL, envia 'PC + 4' para WD3
   regfile     rf(clk, RegWrite, RA1, RA2,
                  a3result, wd3result, PCPlus8,
-                 SrcA, WdPartial);
+                 SrcA, WriteData);
   mux2 #(32)  resmux(ALUResult, ReadData, MemtoReg, Result);
-
-  //verifica se LDRB foi chamado
-  always_comb
-    if (LDRBFlag)
-      assign ResultData = {24'bx,Result[7:0]}; //ResultData vai para wd3mux
-    else
-      assign ResultData = Result;
   
   mux2 #(32) movSrcAmux(SrcA, 32'b0, MOVFlag, movSrcAresult); // Escolhe Src or 0 dependendo de MOVFLag
   extend      ext(Instr[23:0], ImmSrc, ExtImm);
 
   //calculo do shift
-  shifter shift(Instr[11:7], Instr[6:5], WdPartial, ShiftResult);
-
-  //verifica se STRB foi chamado
-  always_comb
-    if (STRBFlag)
-        assign WriteData = {24'bx,WdPartial[7:0]};
-    else
-        assign WriteData = WdPartial;
+  shifter shift(Instr[11:7], Instr[6:5], WriteData, ShiftResult);
 
   // ALU logic
   mux2 #(32)  srcbmux(ShiftResult, ExtImm, ALUSrc, SrcB);

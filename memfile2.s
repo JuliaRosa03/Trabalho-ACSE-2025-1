@@ -33,10 +33,10 @@ LOAD MOV R3,#0xF  ; R3 = 15
 	ORR R5, R4, #32  ; R5 = R4 OR 32 = -268435424
 	ASR R6, R5, #3  ; R6 = R5 >>> 3 = -33554428
 	ASR R7, R3, #2  ; R7 = R3 >>> 2 = 3
-	STRB R5, [R0, #104]  ; mem[104] = 32
+	CMP R3, R3
 	STR R6, [R0, #108]  ; mem[108] = -33554428
 	BL COMPARE  ; should be taken
-	LDRB R8, [R0, #108]  ; R8 = -33554428
+	MOV R10, #0xA
 	B DONE
 
 COMPARE TST R1, #0  ; 10 AND 0 = 0 & set Flags
