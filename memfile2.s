@@ -45,3 +45,5 @@ COMPARE TST R1, #0  ; 10 AND 0 = 0 & set Flags
 	MOV R15, R14  ; PC <- LR
 
 DONE STR R9, [R0, #112]  ; mem[112] = 5
+	ADD R12, R7, R2, LSL #2  ; R12 = 3 + (12 << 2) = 51
+    STR R12, [R0, #116]      ; mem[116] = 51

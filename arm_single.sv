@@ -462,8 +462,12 @@ module datapath(input  logic        clk, reset,
   mux2 #(32) movSrcAmux(SrcA, 32'b0, MOVFlag, movSrcAresult); // Escolhe Src or 0 dependendo de MOVFLag
   extend      ext(Instr[23:0], ImmSrc, ExtImm);
 
+
+  logic [31:0] RmValue;
+  assign RmValue = WriteData;  // WriteData = saída de Rm (RA2)
+  
   //calculo do shift
-  shifter shift(Instr[11:7], Instr[6:5], WriteData, ShiftResult);
+  shifter shift(Instr[11:7], Instr[6:5], RmValue, ShiftResult);
 
   // ALU logic
   mux2 #(32)  srcbmux(ShiftResult, ExtImm, ALUSrc, SrcB);
