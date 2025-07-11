@@ -335,7 +335,7 @@ module decoder(input  logic [1:0] Op,
             NoWrite = 1'b0; //se for TST nao escreve
         end
         4'b0001: begin
-            ALUControl = 3'b100; //EOR (XOR)
+            ALUControl = 3'b100; //EOR
             MOVFlag = 1'b0;
             NoWrite = 1'b1;
         end
